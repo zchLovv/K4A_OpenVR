@@ -19,9 +19,13 @@ public:
 	void setProcessNoise(float q);
 
 private:
-	SimpleKalmanFilter x = SimpleKalmanFilter(0.2, 0.1, 0.01);
-	SimpleKalmanFilter y = SimpleKalmanFilter(0.2, 0.1, 0.01);
-	SimpleKalmanFilter z = SimpleKalmanFilter(0.2, 0.1, 0.01);
+	SimpleKalmanFilter x = SimpleKalmanFilter(0.2, 0.1, 0.014);
+	SimpleKalmanFilter y = SimpleKalmanFilter(0.2, 0.1, 0.014);
+	SimpleKalmanFilter z = SimpleKalmanFilter(0.2, 0.1, 0.014);
+	//SimpleKalmanFilter qw = SimpleKalmanFilter(0.001, 0.1, 0.01);
+	SimpleKalmanFilter qx = SimpleKalmanFilter(0.001, 0.001, 0.014);
+	SimpleKalmanFilter qy = SimpleKalmanFilter(0.001, 0.001, 0.014);
+	SimpleKalmanFilter qz = SimpleKalmanFilter(0.001, 0.001, 0.014);
 };
 
 

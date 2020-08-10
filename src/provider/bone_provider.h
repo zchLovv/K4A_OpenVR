@@ -79,15 +79,24 @@ inline vr::HmdQuaternion_t QuaternionInverse(vr::HmdQuaternion_t& quat)
 	return inverse_quat;
 }
 
-inline k4a_quaternion_t QuaternionInverse(k4a_quaternion_t& quat)
-{
-	k4a_quaternion_t inverse_quat;
-	inverse_quat.wxyz.w = quat.wxyz.w;
-	inverse_quat.wxyz.x = -(quat.wxyz.x);
-	inverse_quat.wxyz.y = -(quat.wxyz.y);
-	inverse_quat.wxyz.z = -(quat.wxyz.z);
-	return inverse_quat;
+inline k4a_quaternion_t nlerp(vr::HmdQuaternion_t q1, k4a_quaternion_t q2, float percent) {
+	k4a_quaternion_t lerped;
+	// Linear interpolation
+	lerped.wxyz.w = (q1.w + percent * (q2.wxyz.w - q1.w));
+	lerped.wxyz.x = (q1.x + percent * (q2.wxyz.z - q1.x));
+	lerped.wxyz.y = (q1.y + percent * (q2.wxyz.x - q1.y));
+	lerped.wxyz.z = (q1.z + percent * (q2.wxyz.y - q1.z));
+	// Normilized
+	float mag = pow(sqrt(lerped.wxyz.w * lerped.wxyz.w + lerped.wxyz.x * lerped.wxyz.x + lerped.wxyz.y * lerped.wxyz.y + lerped.wxyz.z * lerped.wxyz.z), 2);
+	lerped.wxyz.w /= mag;
+	lerped.wxyz.x /= mag;
+	lerped.wxyz.y /= mag;
+	lerped.wxyz.z /= mag;
+	return lerped;
 }
+
+
+
 
 typedef enum _K4ABoneProviderError
 {

@@ -5,6 +5,9 @@ k4abt_joint_t bone_filter::getNextPos(k4abt_joint_t rawJoint) {
 	predictedJoint.position.xyz.x = x.updateEstimate(rawJoint.position.xyz.x);
 	predictedJoint.position.xyz.y = y.updateEstimate(rawJoint.position.xyz.y);
 	predictedJoint.position.xyz.z = z.updateEstimate(rawJoint.position.xyz.z);
+	predictedJoint.orientation.wxyz.x = qx.updateEstimate(rawJoint.orientation.wxyz.x);
+	predictedJoint.orientation.wxyz.y = qy.updateEstimate(rawJoint.orientation.wxyz.y);
+	predictedJoint.orientation.wxyz.z = qz.updateEstimate(rawJoint.orientation.wxyz.z);
 	return predictedJoint;
 }
 

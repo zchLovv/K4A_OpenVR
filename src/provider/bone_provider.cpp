@@ -7,15 +7,14 @@
 #include <fstream>
 #include <string>
 #include <windows.h>
-
-
-
+#include <omp.h>
 
 
 static TCHAR calibrationMemName[] = TEXT("BoneCalibrationMemmap");
 
 static HANDLE calibrationMemHandle = INVALID_HANDLE_VALUE;
 static calibration_data_t* calibrationMem = NULL;
+
 
 static void k4a_log_cb(void* context,
 	k4a_log_level_t level,
@@ -107,15 +106,17 @@ K4ABoneProviderError K4ABoneProvider::Start()
 {
 	if (m_open)
 	{
-
+		m_device_config.camera_fps = K4A_FRAMES_PER_SECOND_15;
 		if (k4a_device_start_cameras(m_device, &m_device_config) != K4A_RESULT_SUCCEEDED)
 		{
 			m_driver_log("Start camera failed\n");
 			m_error = BONE_PROVIDER_CAMERA_START_ERROR;
 			return m_error;
 		}
+		
 
 		m_bone_thread = new std::thread(ProcessBones, this);
+
 	}
 	return BONE_PROVIDER_OPEN_ERROR;
 }
@@ -128,7 +129,6 @@ K4ABoneProviderError K4ABoneProvider::Stop()
 
 		m_bone_thread->join();
 		
-
 		m_hip_pose.deviceIsConnected = false;
 		m_rleg_pose.deviceIsConnected = false;
 		m_lleg_pose.deviceIsConnected = false;
@@ -214,17 +214,9 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 	k4a_device_t device = context->m_device;
 	k4abt_tracker_t tracker;
 
-	uint32_t ids[8];
-	ids[0] = context->m_hip_id;
-	ids[1] = context->m_lleg_id;
-	ids[2] = context->m_rleg_id;
-	ids[3] = context->m_chest_id;
-	ids[4] = context->m_relbow_id;
-	ids[5] = context->m_lelbow_id;
-	ids[6] = context->m_rknee_id;
-	ids[7] = context->m_lknee_id;
-
-
+	uint32_t ids[8] = { context->m_hip_id, context->m_lleg_id, context->m_rleg_id, context->m_chest_id, context->m_relbow_id,
+	context->m_lelbow_id, context->m_rknee_id, context->m_lknee_id};
+	
 	k4a_capture_t capture = nullptr;
 	k4abt_frame_t body_frame = nullptr;
 
@@ -263,11 +255,8 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 
 		// create array of jointIDs for array access
 		k4abt_joint_id_t jointIDs[] = { K4ABT_JOINT_PELVIS, K4ABT_JOINT_FOOT_LEFT, K4ABT_JOINT_FOOT_RIGHT, K4ABT_JOINT_SPINE_CHEST, 
-		K4ABT_JOINT_ELBOW_RIGHT, K4ABT_JOINT_ELBOW_LEFT, K4ABT_JOINT_KNEE_RIGHT, K4ABT_JOINT_KNEE_LEFT};
-		
+		K4ABT_JOINT_ELBOW_RIGHT, K4ABT_JOINT_ELBOW_LEFT, K4ABT_JOINT_KNEE_RIGHT, K4ABT_JOINT_KNEE_LEFT };
 
-
-		
 		float smoothing = 0.0f;
 		bool updateData = false;
 		// create bone filter for each bone
@@ -320,43 +309,52 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 								{
 									clock_t thisTime = clock();
 									float timePassed = float(thisTime - lastTime) / CLOCKS_PER_SEC;
-
+									
 									// lambda update that updates a bone's position and rotation
-									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed) {
+									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed, bool takeOrientation) {
 										k4abt_joint_t bonePrediction = boneFilter.getNextPos(bone);
 										float temp;
+										k4a_quaternion_t slerped = nlerp(bone_pose.qRotation, bone.orientation, 0.6);
 										bone_pose.poseIsValid = true;
-										bone_pose.qRotation.w = bone.orientation.wxyz.w;
-										bone_pose.qRotation.x = bone.orientation.wxyz.z;
-										bone_pose.qRotation.y = bone.orientation.wxyz.x;
-										bone_pose.qRotation.z = bone.orientation.wxyz.y;
+										bone_pose.qRotation.w = slerped.wxyz.w;
+										bone_pose.qRotation.x = slerped.wxyz.x;
+										bone_pose.qRotation.y = slerped.wxyz.y;
+										bone_pose.qRotation.z = slerped.wxyz.z;
+
+										//bone_pose.vecAngularVelocity[0] = angularVelocities.xyz.z;
+										//bone_pose.vecAngularVelocity[1] = angularVelocities.xyz.x;
+										//bone_pose.vecAngularVelocity[2] = angularVelocities.xyz.y;
 										temp = bone_pose.vecPosition[0];
-										bone_pose.vecPosition[0] = (0.3 * (bone_pose.vecPosition[0] + (bone_pose.vecVelocity[0] * timePassed))) + (0.7 * (bonePrediction.position.xyz.z / 1000));
+										bone_pose.vecPosition[0] = (0.2 * (bone_pose.vecPosition[0] + (bone_pose.vecVelocity[0] * timePassed))) + (0.8 * (bonePrediction.position.xyz.z / 1000));
 										bone_pose.vecVelocity[0] = (bone_pose.vecPosition[0] - temp) / timePassed;
 										temp = bone_pose.vecPosition[1];
-										bone_pose.vecPosition[1] = (0.3 * (bone_pose.vecPosition[1] + (bone_pose.vecVelocity[1] * timePassed))) + (0.7 * (bonePrediction.position.xyz.x / 1000));
+										bone_pose.vecPosition[1] = (0.2 * (bone_pose.vecPosition[1] + (bone_pose.vecVelocity[1] * timePassed))) + (0.8 * (bonePrediction.position.xyz.x / 1000));
 										bone_pose.vecVelocity[1] = (bone_pose.vecPosition[1] - temp) / timePassed;
 										temp = bone_pose.vecPosition[2];
-										bone_pose.vecPosition[2] = (0.3 * (bone_pose.vecPosition[2] + (bone_pose.vecVelocity[2] * timePassed))) + (0.7 * (bonePrediction.position.xyz.y / 1000));
+										bone_pose.vecPosition[2] = (0.2 * (bone_pose.vecPosition[2] + (bone_pose.vecVelocity[2] * timePassed))) + (0.8 * (bonePrediction.position.xyz.y / 1000));
 										bone_pose.vecVelocity[2] = (bone_pose.vecPosition[2] - temp) / timePassed;
 										bone_pose.poseTimeOffset = timePassed;
 									};
 
+									
+
+
+									// Extra tracker functionality disabled for now
 									if (calibrationMem->moreTrackers) {
-										#pragma omp parallel for
+										/*#pragma omp parallel for
 										for (int i = 0; i < 8; i++) {
 											updateBone(std::ref(filters[i]), skeleton.joints[jointIDs[i]], std::ref(poses[i]), timePassed);
 											vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[i], poses[i], sizeof(vr::DriverPose_t));
-										}
+										}*/
 									}
 									else {
+										omp_set_num_threads(2);
 										#pragma omp parallel for
 										for (int i = 0; i < 3; i++) {
-											updateBone(std::ref(filters[i]), skeleton.joints[jointIDs[i]], std::ref(poses[i]), timePassed);
+											updateBone(std::ref(filters[i]), skeleton.joints[jointIDs[i]], std::ref(poses[i]), timePassed, (i == 0)? true: true);
 											vr::VRServerDriverHost()->TrackedDevicePoseUpdated(ids[i], poses[i], sizeof(vr::DriverPose_t));
 										}
 									}
-
 									lastTime = clock();
 									calibrationMem->fps = 1 / timePassed;
 								}
