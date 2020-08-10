@@ -314,24 +314,24 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed, bool takeOrientation) {
 										k4abt_joint_t bonePrediction = boneFilter.getNextPos(bone);
 										float temp;
-										k4a_quaternion_t slerped = nlerp(bone_pose.qRotation, bone.orientation, 0.6);
+										//k4a_quaternion_t slerped = nlerp(bone_pose.qRotation, bone.orientation, 0.6);
 										bone_pose.poseIsValid = true;
-										bone_pose.qRotation.w = slerped.wxyz.w;
-										bone_pose.qRotation.x = slerped.wxyz.x;
-										bone_pose.qRotation.y = slerped.wxyz.y;
-										bone_pose.qRotation.z = slerped.wxyz.z;
+										bone_pose.qRotation.w = bonePrediction.orientation.wxyz.w;
+										bone_pose.qRotation.x = bonePrediction.orientation.wxyz.x;
+										bone_pose.qRotation.y = bonePrediction.orientation.wxyz.y;
+										bone_pose.qRotation.z = bonePrediction.orientation.wxyz.z;
 
 										//bone_pose.vecAngularVelocity[0] = angularVelocities.xyz.z;
 										//bone_pose.vecAngularVelocity[1] = angularVelocities.xyz.x;
 										//bone_pose.vecAngularVelocity[2] = angularVelocities.xyz.y;
 										temp = bone_pose.vecPosition[0];
-										bone_pose.vecPosition[0] = (0.2 * (bone_pose.vecPosition[0] + (bone_pose.vecVelocity[0] * timePassed))) + (0.8 * (bonePrediction.position.xyz.z / 1000));
+										bone_pose.vecPosition[0] = (0.3 * (bone_pose.vecPosition[0] + (bone_pose.vecVelocity[0] * timePassed))) + (0.7 * (bonePrediction.position.xyz.z / 1000));
 										bone_pose.vecVelocity[0] = (bone_pose.vecPosition[0] - temp) / timePassed;
 										temp = bone_pose.vecPosition[1];
-										bone_pose.vecPosition[1] = (0.2 * (bone_pose.vecPosition[1] + (bone_pose.vecVelocity[1] * timePassed))) + (0.8 * (bonePrediction.position.xyz.x / 1000));
+										bone_pose.vecPosition[1] = (0.3 * (bone_pose.vecPosition[1] + (bone_pose.vecVelocity[1] * timePassed))) + (0.7 * (bonePrediction.position.xyz.x / 1000));
 										bone_pose.vecVelocity[1] = (bone_pose.vecPosition[1] - temp) / timePassed;
 										temp = bone_pose.vecPosition[2];
-										bone_pose.vecPosition[2] = (0.2 * (bone_pose.vecPosition[2] + (bone_pose.vecVelocity[2] * timePassed))) + (0.8 * (bonePrediction.position.xyz.y / 1000));
+										bone_pose.vecPosition[2] = (0.3 * (bone_pose.vecPosition[2] + (bone_pose.vecVelocity[2] * timePassed))) + (0.7 * (bonePrediction.position.xyz.y / 1000));
 										bone_pose.vecVelocity[2] = (bone_pose.vecPosition[2] - temp) / timePassed;
 										bone_pose.poseTimeOffset = timePassed;
 									};

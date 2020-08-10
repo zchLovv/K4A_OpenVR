@@ -79,6 +79,7 @@ inline vr::HmdQuaternion_t QuaternionInverse(vr::HmdQuaternion_t& quat)
 	return inverse_quat;
 }
 
+/*
 inline k4a_quaternion_t nlerp(vr::HmdQuaternion_t q1, k4a_quaternion_t q2, float percent) {
 	k4a_quaternion_t lerped;
 	// Linear interpolation
@@ -93,7 +94,7 @@ inline k4a_quaternion_t nlerp(vr::HmdQuaternion_t q1, k4a_quaternion_t q2, float
 	lerped.wxyz.y /= mag;
 	lerped.wxyz.z /= mag;
 	return lerped;
-}
+}*/
 
 
 
