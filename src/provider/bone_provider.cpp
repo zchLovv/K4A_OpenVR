@@ -269,12 +269,11 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 		{
 			if (k4a_device_get_capture(device, &capture, K4A_WAIT_INFINITE) != K4A_WAIT_RESULT_SUCCEEDED)
 			{
-				updateData = true;
 				continue;
 			}
 			else
 			{
-				if (k4abt_tracker_enqueue_capture(tracker, capture, 0) != K4A_WAIT_RESULT_SUCCEEDED)
+				if (k4abt_tracker_enqueue_capture(tracker, capture, 3) != K4A_WAIT_RESULT_SUCCEEDED)
 				{
 					k4a_capture_release(capture);
 					updateData = true;
@@ -282,7 +281,7 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 				}
 				else
 				{
-					if (k4abt_tracker_pop_result(tracker, &body_frame, 0) != K4A_WAIT_RESULT_SUCCEEDED)
+					if (k4abt_tracker_pop_result(tracker, &body_frame, 3) != K4A_WAIT_RESULT_SUCCEEDED)
 					{
 						k4a_capture_release(capture);
 						updateData = true;
@@ -310,7 +309,7 @@ void K4ABoneProvider::ProcessBones(K4ABoneProvider* context)
 									clock_t thisTime = clock();
 									float timePassed = float(thisTime - lastTime) / CLOCKS_PER_SEC;
 									
-									// lambda update that updates a bone's position and rotation
+									// lambda function that updates a bone's position and rotation
 									auto updateBone = [](bone_filter& boneFilter, k4abt_joint_t bone, vr::DriverPose_t& bone_pose, float timePassed, bool takeOrientation) {
 										k4abt_joint_t bonePrediction = boneFilter.getNextPos(bone);
 										float temp;

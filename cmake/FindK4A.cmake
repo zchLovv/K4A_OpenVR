@@ -8,7 +8,7 @@ Locates the K4A redistributables and libraries. Both SDK and body tracking
 are searched
 #]=======================================================================]
 if (NOT DEFINED )
-set(K4A_SDK_VERSION "v1.4.0")
+set(K4A_SDK_VERSION "v1.4.1")
 endif()
 if (NOT DEFINED ${K4A_SDK_ROOT})
 find_path(K4A_SDK_ROOT
